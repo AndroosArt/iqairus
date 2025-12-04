@@ -2,10 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { X, Check, ChevronRight, ArrowRight } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import emailjs from '@emailjs/browser';
 
 function cn(...inputs) {
     return twMerge(clsx(inputs));
 }
+
+// EmailJS Configuration
+const EMAILJS_CONFIG = {
+    serviceId: 'service_ztbio3x',
+    templateId: 'template_fgdq679',
+    publicKey: 'KEZ1atgkdf6Nb8KyL'
+};
 
 const QuizModal = ({ isOpen, onClose }) => {
     const [step, setStep] = useState(0);
@@ -79,23 +87,37 @@ const QuizModal = ({ isOpen, onClose }) => {
         }
     };
 
-    const handleFinalSubmit = (e) => {
+    const handleFinalSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
 
-        const leadDataObject = {
-            name: firstName,
-            email: contactInfo.email,
-            answers: answers
+        // Map quiz data to EmailJS template variables
+        const templateParams = {
+            user_name: firstName,
+            user_email: contactInfo.email,
+            goal: answers.vision || 'Not answered',
+            bottleneck: answers.bottleneck || 'Not answered',
+            revenue: answers.revenue || 'Not answered'
         };
 
-        console.log("IQairus Lead Data:", leadDataObject);
+        try {
+            // Send email via EmailJS
+            await emailjs.send(
+                EMAILJS_CONFIG.serviceId,
+                EMAILJS_CONFIG.templateId,
+                templateParams,
+                EMAILJS_CONFIG.publicKey
+            );
 
-        // Simulate API call
-        setTimeout(() => {
+            console.log("IQairus Lead Data sent successfully:", templateParams);
             setIsSubmitting(false);
             setIsSuccess(true);
-        }, 1500);
+        } catch (error) {
+            console.error("Failed to send email:", error);
+            setIsSubmitting(false);
+            // Still show success to user, but log the error
+            setIsSuccess(true);
+        }
     };
 
     const totalSteps = questions.length;
